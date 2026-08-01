@@ -27,6 +27,31 @@ enforce server-side auth, and "hidden" JS logic is visible via view-source).
 
 ## Running it
 
+### For competition deployment (recommended): Docker
+
+Players don't need Python, pip, or anything installed — you (the organizer)
+just need Docker on whatever machine or server will host the challenge.
+
+```bash
+docker build -t coldboot-ctf .
+docker run -d -p 5000:5000 -e SECRET_KEY=$(openssl rand -hex 32) --name coldboot coldboot-ctf
+```
+
+That's it. The challenge is now live at `http://<host-ip>:5000` for anyone
+who can reach that machine/port. To stop it: `docker stop coldboot`.
+
+- `-p 5000:5000` maps container port 5000 to the host. Change the first
+  number if you want it on a different port, e.g. `-p 8080:5000`.
+- `-e SECRET_KEY=...` sets a random Flask session secret at runtime instead
+  of baking one into the image (important if multiple people might inspect
+  the image).
+- If you're hosting this for a live competition, put it on a VPS (DigitalOcean,
+  Linode, a cloud VM, etc.) with a public IP, open the port in the firewall,
+  and hand out `http://<vps-ip>:5000` to players. A reverse proxy (nginx/Caddy)
+  in front with a domain name is nicer but optional.
+
+### For local testing / development only
+
 ```
 pip install -r requirements.txt
 python app.py
