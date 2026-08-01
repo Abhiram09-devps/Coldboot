@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COLDBOOT — PC Game Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E0C; --bg-panel:#0F1510; --bg-raised:#161D14;
+    --line:#233524; --phosphor:#4EE58A; --phosphor-dim:#2B8F55; --phosphor-faint:#1B3324;
+    --amber:#FFB000; --text:#D9E4D3; --text-dim:#7C8C77;
+    --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 5vw; background:rgba(10,14,12,0.9); border-bottom:1px solid var(--line);
+  }
+  .logo{ font-family:var(--mono); font-weight:700; font-size:16px; letter-spacing:0.05em; color:var(--phosphor); }
+  .logo span{ color:var(--text-dim); }
+  .btn{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.08em;
+    background:transparent; border:1px solid var(--line); color:var(--text);
+    padding:8px 14px; text-decoration:none;
+  }
+  .btn:hover{ border-color:var(--phosphor-dim); color:var(--phosphor); }
+  main{ max-width:900px; margin:0 auto; padding:64px 5vw; }
+  .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:0.18em; color:var(--phosphor-dim); margin-bottom:10px; }
+  .eyebrow::before{ content:'> '; }
+  h1{ font-family:var(--mono); font-size:clamp(28px,4vw,44px); text-transform:uppercase; margin-bottom:20px; }
+  h1 em{ font-style:normal; color:var(--phosphor); }
+  p{ color:var(--text-dim); line-height:1.7; max-width:60ch; }
+  .flag-box{
+    margin-top:36px; background:var(--bg-panel); border:1px solid var(--phosphor-faint);
+    padding:24px; font-family:var(--mono); color:var(--phosphor);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">C:\&gt;_ <span>COLDBOOT</span></div>
+  <a class="btn" href="{{ url_for('logout') }}">LOGOUT</a>
+</header>
+
+<main>
+  <div class="eyebrow">ACCESS GRANTED</div>
+  <h1>WELCOME BACK,<br><em>{{ session.get('authenticated') and 'ADMIN' }}</em></h1>
+  <p>You're past the login gate. In a real store this is where the catalog would render — for this challenge, reaching this page is the win condition.</p>
+  <div class="flag-box">
+    SYSTEM STATUS: AUTHENTICATED<br>
+    SESSION: ACTIVE<br>
+    NICE WORK — YOU FOUND THE HIDDEN ENDPOINT AND CRACKED THE CIPHER.
+  </div>
+</main>
+
+</body>
+</html>
