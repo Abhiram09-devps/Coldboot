@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from functools import wraps
 import os
 
 app = Flask(__name__)
@@ -20,22 +21,20 @@ ENCODED_BACKUP = "AlQBDQxVPUcXQlwjAwJcBkICXFZU"
 # ---------------------------------------------------------------------------
 # Access control
 # ---------------------------------------------------------------------------
-# Only /login and the static assets are reachable while unauthenticated.
-# /backup is ALSO intentionally reachable unauthenticated -- it's not linked
-# from any page, so the only way to find it is by directory brute-forcing
-# (gobuster/dirb/ffuf). That's the whole point of the challenge: recon before
-# you can even log in.
-PUBLIC_PATHS = {"/login", "/backup"}
-PUBLIC_PREFIXES = ("/static/",)
-
-
-@app.before_request
-def require_login():
-    path = request.path
-    if path in PUBLIC_PATHS or path.startswith(PUBLIC_PREFIXES):
-        return
-    if not session.get("authenticated"):
-        return redirect(url_for("login"))
+# IMPORTANT: this is a decorator applied only to routes that actually exist,
+# not a blanket before_request. A blanket "redirect everything to /login"
+# rule would make every URL -- real or made-up -- return the same 302,
+# which breaks directory brute-forcing tools (gobuster/dirb/ffuf all treat
+# that as a wildcard response and refuse to give useful results). By only
+# gating real routes, nonexistent paths fall through to Flask's normal 404,
+# so gobuster can actually tell /backup apart from noise.
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("authenticated"):
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+    return wrapped
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -69,6 +68,7 @@ def backup():
 
 
 @app.route("/")
+@login_required
 def index():
     return render_template("index.html")
 
