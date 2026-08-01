@@ -3,7 +3,12 @@ from functools import wraps
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-this-in-production")
+# `or` (not the second arg to .get()) so this falls back correctly whether
+# SECRET_KEY is missing entirely OR present-but-empty (e.g. a blank field
+# in a hosting dashboard). Flask refuses to touch sessions at all if
+# secret_key ends up falsy, which is exactly what caused the "no secret
+# key was set" 500 error.
+app.secret_key = os.environ.get("SECRET_KEY") or "coldboot-ctf-fallback-secret-change-me"
 
 # ---------------------------------------------------------------------------
 # CTF credentials
