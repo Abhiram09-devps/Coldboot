@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COLDBOOT — CHALLENGE COMPLETE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E0C; --bg-panel:#0F1510;
+    --line:#233524; --phosphor:#4EE58A; --phosphor-dim:#2B8F55; --phosphor-faint:#1B3324;
+    --text:#D9E4D3; --text-dim:#7C8C77;
+    --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  body::before{
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 3px);
+    pointer-events:none; opacity:0.35;
+  }
+  .wrap{ max-width:560px; width:100%; padding:20px; text-align:center; }
+  .panel{ border:1px solid var(--phosphor-faint); background:var(--bg-panel); padding:48px 32px; }
+  .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:0.18em; color:var(--phosphor-dim); margin-bottom:16px; }
+  .eyebrow::before{ content:'> '; }
+  h1{ font-family:var(--mono); font-size:clamp(26px,4vw,38px); text-transform:uppercase; margin-bottom:20px; color:var(--phosphor); }
+  p{ color:var(--text-dim); line-height:1.7; margin-bottom:8px; }
+  .team{ color:var(--phosphor); font-family:var(--mono); font-weight:700; }
+  .console{
+    margin-top:28px; text-align:left; background:var(--bg); border:1px solid var(--line);
+    padding:20px; font-family:var(--mono); font-size:12px; color:var(--phosphor); line-height:1.8;
+  }
+  .btn{
+    display:inline-block; margin-top:28px; font-family:var(--mono); font-size:12px; letter-spacing:0.08em;
+    border:1px solid var(--line); color:var(--text); text-decoration:none; padding:12px 20px; text-transform:uppercase;
+  }
+  .btn:hover{ border-color:var(--phosphor-dim); color:var(--phosphor); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="eyebrow">CHALLENGE COMPLETE</div>
+    <h1>ACCESS FULLY GRANTED</h1>
+    <p>Nice work, <span class="team">{{ team_name }}</span>.</p>
+    <p>You cracked the login gate, tracked down the hidden ops endpoint,
+       and pulled the flag out of a steganographically embedded image.
+       That's the full run.</p>
+    <div class="console">
+      SYSTEM STATUS: COMPLETE<br>
+      FLAG: VERIFIED<br>
+      NOTIFICATION: SENT TO EVENT ORGANIZERS<br>
+      TEAM: {{ team_name }}
+    </div>
+    <a class="btn" href="{{ url_for('index') }}">&larr; BACK TO STORE</a>
+  </div>
+</div>
+
+</body>
+</html>

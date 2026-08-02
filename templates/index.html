@@ -350,6 +350,9 @@
     <div class="hero">
       <div>
         <div class="eyebrow">SYSTEM STATUS: READY</div>
+        <div style="display:inline-block; margin-bottom:16px; padding:8px 14px; border:1px solid var(--phosphor-dim); color:var(--phosphor); font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.1em; text-transform:uppercase;">
+          ⚑ Find the Flag to checkout
+        </div>
         <h1>YOUR NEXT<br><em>OBSESSION</em><br>IS ONE INSTALL AWAY.</h1>
         <p>2,847 titles indexed. No launcher bloat, no account wall to browse — just games, specs, and a price you can read at a glance.</p>
         <div class="hero-cta">
@@ -410,39 +413,36 @@
 
   <!-- ===== CONTACT ===== -->
   <section class="view" id="contact">
-    <div class="eyebrow">SUPPORT CHANNEL</div>
+    <div class="eyebrow">FLAG SUBMISSION</div>
     <h2 style="font-size:26px; margin-bottom:24px;">CONTACT US</h2>
     <div class="detail-grid">
       <div class="bios">
         <div class="bios-top">
           COLDBOOT SUPPORT TERMINAL v4.2<br>
-          <span class="r2">FILL OUT THE FORM TO OPEN A TICKET</span>
+          <span class="r2">SUBMIT YOUR TEAM'S FLAG BELOW</span>
         </div>
-        <div class="field">
-          <label>NAME</label>
-          <input type="text" id="contact-name" placeholder="player_01" autocomplete="off">
-        </div>
-        <div class="field">
-          <label>EMAIL</label>
-          <input type="email" id="contact-email" placeholder="you@example.com" autocomplete="off">
-        </div>
-        <div class="field">
-          <label>TOPIC</label>
-          <select id="contact-topic">
-            <option value="GENERAL">GENERAL INQUIRY</option>
-            <option value="BILLING">BILLING / ORDERS</option>
-            <option value="TECH">TECHNICAL SUPPORT</option>
-            <option value="PRESS">PRESS / PARTNERSHIPS</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>MESSAGE</label>
-          <textarea id="contact-message" rows="5" placeholder="Describe the issue..."></textarea>
-        </div>
-        <div class="login-actions">
-          <button class="btn primary" onclick="submitContact()">TRANSMIT MESSAGE</button>
-        </div>
-        <div class="console" id="contact-console"></div>
+        <form method="POST" action="{{ url_for('submit_flag') }}">
+          <div class="field">
+            <label>TEAM NAME</label>
+            <input type="text" name="team_name" placeholder="team_name" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label>EMAIL</label>
+            <input type="email" name="team_email" placeholder="you@example.com" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label>FLAG</label>
+            <input type="text" name="flag" placeholder="FLAG{...}" autocomplete="off" required>
+          </div>
+          <div class="login-actions">
+            <button class="btn primary" type="submit">TRANSMIT MESSAGE</button>
+          </div>
+        </form>
+        {% if get_flashed_messages() %}
+          <div class="console error" id="contact-console">{{ get_flashed_messages()[0] }}</div>
+        {% else %}
+          <div class="console" id="contact-console"></div>
+        {% endif %}
       </div>
       <div>
         <div class="specs">
@@ -624,27 +624,13 @@
     <div class="grid">${GAMES.map(cardHTML).join('')}</div>`;
   homeSection.appendChild(recent);
 
-  // ---------- CONTACT ----------
-  function submitContact(){
-    const name = document.getElementById('contact-name').value.trim();
-    const email = document.getElementById('contact-email').value.trim();
-    const message = document.getElementById('contact-message').value.trim();
-    const consoleEl = document.getElementById('contact-console');
-    if(!name || !email || !message){
-      consoleEl.style.color = 'var(--error)';
-      consoleEl.textContent = 'ERROR: NAME, EMAIL, AND MESSAGE ARE REQUIRED.\nFILL IN ALL FIELDS TO TRANSMIT.';
-      return;
-    }
-    consoleEl.style.color = 'var(--phosphor-dim)';
-    consoleEl.textContent = 'ENCODING PACKET...';
-    setTimeout(()=>{
-      const ticket = Math.floor(1000 + Math.random()*9000);
-      consoleEl.textContent = `ENCODING PACKET...\nMESSAGE TRANSMITTED \u2014 TICKET #${ticket} OPENED.\nA REPLY WILL REACH ${email.toUpperCase()} WITHIN 24-48 HOURS.`;
-      document.getElementById('contact-name').value = '';
-      document.getElementById('contact-email').value = '';
-      document.getElementById('contact-message').value = '';
-    }, 700);
-  }
+  // ---------- FLAG SUBMISSION ERROR HANDLING ----------
+  // If the server flashed an error (wrong/missing flag on submit), jump
+  // straight to the contact view so the player sees it immediately
+  // instead of landing back on the home view with no context.
+  {% if get_flashed_messages() %}
+  window.addEventListener('DOMContentLoaded', ()=> showView('contact'));
+  {% endif %}
 </script>
 
 <!--
