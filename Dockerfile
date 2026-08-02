@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
 COPY templates/ templates/
+COPY static/ static/
 
 # Generate a random secret key at build time isn't ideal (same key baked into
 # every container run from this image). Pass SECRET_KEY at `docker run` time
