@@ -45,6 +45,12 @@
   .console.error{ color:var(--error); }
   .logo{ font-weight:700; font-size:16px; letter-spacing:0.05em; color:var(--phosphor); margin-bottom:4px; }
   .logo span{ color:var(--text-dim); }
+  .dl-link{
+    display:block; margin-top:14px; text-align:center; font-size:11px;
+    letter-spacing:0.08em; color:var(--text-dim); text-decoration:none;
+    border:1px solid var(--line); padding:10px; text-transform:uppercase;
+  }
+  .dl-link:hover{ color:var(--phosphor); border-color:var(--phosphor-dim); }
 </style>
 </head>
 <body>
@@ -70,12 +76,16 @@
     {% if error %}
       <div class="console error">{{ error }}</div>
     {% endif %}
+    <a class="dl-link" href="{{ url_for('static', filename='gg/bb/hh/wordlist.txt') }}" download>
+      ⬇ download recon wordlist
+    </a>
   </div>
 </div>
 
 <!--
   TODO(ops): remove this debug leftover before launch.
-  last night's automated backup job used xor seed 'c0ldboot' -- rotate it.
+  last night's automated backup job used xor seed prefix 'c0ld' -- the
+  nightly rotation suffix gets stamped in the response headers, check those too.
 -->
 </body>
 </html>
