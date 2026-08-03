@@ -1,16 +1,61 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, get_flashed_messages
 from functools import wraps
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
+import time
 import smtplib
 from email.message import EmailMessage
 
 app = Flask(__name__)
+# Render (and most PaaS hosts) sit in front of the app as a reverse proxy,
+# so request.remote_addr would otherwise show the proxy's IP for every
+# request instead of the real visitor's. ProxyFix reads X-Forwarded-For
+# and fixes that up -- needed for the per-IP lockout below to actually
+# target individual visitors instead of accidentally locking everyone
+# out at once (or nobody, depending on how it degrades).
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
 # `or` (not the second arg to .get()) so this falls back correctly whether
 # SECRET_KEY is missing entirely OR present-but-empty (e.g. a blank field
 # in a hosting dashboard). Flask refuses to touch sessions at all if
 # secret_key ends up falsy, which is exactly what caused the "no secret
 # key was set" 500 error.
 app.secret_key = os.environ.get("SECRET_KEY") or "coldboot-ctf-fallback-secret-change-me"
+
+# ---------------------------------------------------------------------------
+# Login attempt lockout -- a deliberate, short, self-clearing lockout, not
+# the permanent block some hosting platforms apply automatically at the
+# infrastructure level. In-memory is fine here because Render runs this
+# app with WEB_CONCURRENCY=1 (a single process), so there's only one copy
+# of this dict; it just resets if the app restarts/redeploys.
+# ---------------------------------------------------------------------------
+LOGIN_ATTEMPT_LIMIT = 5
+LOGIN_LOCKOUT_SECONDS = 120
+_login_attempts = {}  # ip -> {"fails": int, "blocked_until": epoch seconds}
+
+
+def _get_client_ip():
+    return request.remote_addr or "unknown"
+
+
+def _is_locked_out(ip):
+    record = _login_attempts.get(ip)
+    if not record:
+        return 0
+    remaining = record["blocked_until"] - time.time()
+    return max(0, int(remaining))
+
+
+def _register_failed_attempt(ip):
+    record = _login_attempts.setdefault(ip, {"fails": 0, "blocked_until": 0})
+    record["fails"] += 1
+    if record["fails"] >= LOGIN_ATTEMPT_LIMIT:
+        record["blocked_until"] = time.time() + LOGIN_LOCKOUT_SECONDS
+        record["fails"] = 0
+
+
+def _clear_attempts(ip):
+    _login_attempts.pop(ip, None)
 
 # ---------------------------------------------------------------------------
 # CTF credentials
@@ -91,13 +136,26 @@ def login_required(view):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
+    ip = _get_client_ip()
+
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-        if username == VALID_USER and password == VALID_PASS:
-            session["authenticated"] = True
-            return redirect(url_for("index"))
-        error = "ACCESS DENIED — INVALID CREDENTIALS."
+        seconds_left = _is_locked_out(ip)
+        if seconds_left > 0:
+            error = f"TOO MANY ATTEMPTS. TRY AGAIN IN {seconds_left}s."
+        else:
+            username = request.form.get("username", "").strip()
+            password = request.form.get("password", "")
+            if username == VALID_USER and password == VALID_PASS:
+                _clear_attempts(ip)
+                session["authenticated"] = True
+                return redirect(url_for("index"))
+            _register_failed_attempt(ip)
+            seconds_left = _is_locked_out(ip)
+            if seconds_left > 0:
+                error = f"TOO MANY ATTEMPTS. TRY AGAIN IN {seconds_left}s."
+            else:
+                error = "ACCESS DENIED — INVALID CREDENTIALS."
+
     response = app.make_response(render_template("login.html", error=error))
     # Second half of the XOR key -- deliberately only visible via response
     # headers (curl -i, browser devtools Network tab), not view-source.
@@ -112,39 +170,43 @@ def logout():
 
 
 # ---------------------------------------------------------------------------
-# Decoys -- these exist so the obvious first guesses ("backup" is in every
-# stock wordlist) cost the player a little time without handing them
-# anything real. Each one is a genuine 200, not a 404, so they show up in
-# a gobuster scan just like the real endpoint does.
+# Decoys -- these exist so blindly trying every non-404 hit costs the
+# player a little time without handing them anything real. Each one is a
+# genuine 200, not a 404, so it shows up in a scan just like the real
+# endpoint does. Unlike the earlier design, these paths are no longer
+# generic tech words guessable from a stock wordlist -- they're names
+# from a 50-entry roster (users.txt) that only exists as a file the
+# organizer hands out directly. A player needs that specific list to even
+# start narrowing things down; the in-page clue then tells them which
+# *one* name in that list is worth trusting.
 # ---------------------------------------------------------------------------
-@app.route("/backup")
-def decoy_backup():
-    return jsonify({
-        "note": "this backup rotated out last week",
-        "status": "stale — check current ops tooling instead",
-    })
+@app.route("/jmartinez")
+def decoy_jmartinez():
+    return jsonify({"note": "on PTO, ping someone else on the team"})
 
 
-@app.route("/old-backup")
-def decoy_old_backup():
-    return jsonify({"error": "archived", "contact": "it-ops@coldboot.local"})
+@app.route("/achen")
+def decoy_achen():
+    return jsonify({"status": "no ops access from this account"})
 
 
-@app.route("/uploads")
-def decoy_uploads():
-    return jsonify({"files": []})
+@app.route("/kwilliams")
+def decoy_kwilliams():
+    return jsonify({"error": "account deactivated"})
 
 
-@app.route("/debug")
-def decoy_debug():
-    return jsonify({"status": "wrong door"})
+@app.route("/dkowalski")
+def decoy_dkowalski():
+    return jsonify({"note": "wrong team, this is billing"})
 
 
-@app.route("/coldsync-ops")
+@app.route("/rvasquez")
 def backup():
-    """The REAL hidden endpoint. Not linked anywhere in the UI, and not a
-    word you'll find in a stock dirb/gobuster wordlist -- players need the
-    provided custom wordlist (or a big enough general one) to land on it."""
+    """The REAL hidden endpoint. Not linked anywhere in the UI. The path is
+    one specific name out of a 50-entry username list the organizer
+    distributes directly -- there's no way to land on it from a stock
+    wordlist, and no way to single it out of the other 49 names without
+    the in-page clue pointing at this specific person."""
     return jsonify({
         "note": "nightly ops sync - scheduled for deletion, do not index",
         "generated": "2026-07-30T02:14:00Z",
